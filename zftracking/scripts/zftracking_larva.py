@@ -20,7 +20,6 @@ import shutil
 
 from zftracking.tracking.interactive_crop import Image
 from zftracking.external.runffmpeg import Ffmpeg
-from zftracking.external.runfiji import ImageJMacro
 from zftracking.tracking.analyze_tracks import Analysis
 from zftracking.tracking.analyze_tracks import distance
 from zftracking.tracking.cv_tracking import Video
@@ -136,33 +135,11 @@ def main():
         crop = crops[i]
         prepare_vid(cropped_video, infile, temp_dir, crop)
 
-        while not start_frame:
-            try:
-                start_frame = int(input("First frame to keep: "))
-            except ValueError:
-                start_frame = False
-        while not end_frame:
-            try:
-                end_frame = int(input("Last frame to keep: ")) + 1
-            except ValueError:
-                end_frame = False
     for i in range(len(temp_dirs)):
-        # segment the video
-        temp_dir = temp_dirs[i]
-        seg_path = seg_paths[i]
-        # run the segmentation macro
-        if args.median:
-            fiji = ImageJMacro("segmentation_median2")
-        else:
-            fiji = ImageJMacro("segmentation2")
-        fiji.run([temp_dir + cropped_video, str(start_frame),
-                  str(end_frame), seg_path])
-
-    for i in range(len(seg_paths)):
         # track the segmented video
+        temp_dir = temp_dirs[i]
         mask = masks[i]
-        seg_path = seg_paths[i]
-        vid = Video(seg_path + ".avi")
+        vid = Video(temp_dir + cropped_video)
         tracks = vid.track()
         outer_tracks = []
         inner_tracks = []
@@ -181,9 +158,6 @@ def main():
     if not args.keep_temp:
         for temp_dir in temp_dirs:
             shutil.rmtree(temp_dir)
-        for i in range(args.number):
-            silent_remove(os.path.join(out_dir,
-                                       "SEG_" + str(i) + '_' + video_name_base + ".avi"))
 
 
 def prep_outfile(out_dir):
